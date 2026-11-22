@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        $middleware->alias(['role' => \App\Http\Middleware\EnsureRole::class]);
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
@@ -27,4 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+        $exceptions->render(fn (DomainException $e, Request $request) => $request->is('api/*')
+            ? response()->json(['error' => $e->getMessage(), 'message' => $e->getMessage()], 422)
+            : back()->with('error', $e->getMessage()));
     })->create();

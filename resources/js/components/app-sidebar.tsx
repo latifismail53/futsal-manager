@@ -1,50 +1,85 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import type { LucideIcon } from 'lucide-react';
+import {
+    BarChart3,
+    BookOpenCheck,
+    CalendarDays,
+    ClipboardList,
+    Clock,
+    Database,
+    LayoutGrid,
+    Package,
+    PiggyBank,
+    Settings,
+    ShoppingCart,
+    TrendingUp,
+    Truck,
+    Users,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
-import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
+import { useCurrentUrl } from '@/hooks/use-current-url';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
+type Item = [href: string, title: string, icon: LucideIcon, roles: string[]];
+const OPS = ['admin', 'kasir'];
+const ALL = ['admin', 'kasir', 'akuntan'];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
+export const NAV: [string, Item[]][] = [
+    [
+        'Operasional',
+        [
+            ['/dashboard', 'Dashboard', LayoutGrid, ALL],
+            ['/jam-kosong', 'Cek Jam Kosong', Clock, OPS],
+            ['/kalender', 'Kalender', CalendarDays, OPS],
+            ['/pemesanan', 'Pemesanan', ClipboardList, OPS],
+            ['/penjualan', 'Penjualan (Kasir)', ShoppingCart, OPS],
+            ['/pembelian', 'Pembelian', Truck, ['admin', 'akuntan']],
+            ['/stok', 'Stok & Opname', Package, ['admin']],
+            ['/pelanggan', 'Pelanggan', Users, OPS],
+            ['/master', 'Master Data', Database, ['admin']],
+        ],
+    ],
+    [
+        'Keuangan',
+        [
+            ['/akuntansi', 'Akuntansi', BookOpenCheck, ['akuntan']],
+            ['/laporan-keuangan', 'Laporan Keuangan', TrendingUp, ['akuntan']],
+            ['/anggaran', 'Anggaran vs Realisasi', PiggyBank, ['akuntan']],
+        ],
+    ],
+    [
+        'Analitik',
+        [
+            ['/laporan-pemesanan', 'Laporan Pemesanan', BarChart3, ['admin', 'akuntan']],
+            ['/pengaturan', 'Pengaturan Usaha', Settings, ['admin']],
+        ],
+    ],
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage().props;
+    const role = (auth.user?.role as string) || '';
+    const { isCurrentUrl } = useCurrentUrl();
+    const can = (roles: string[]) => role === 'owner' || roles.includes(role);
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href="/dashboard" prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -53,11 +88,30 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                {NAV.map(([group, items]) => {
+                    const visible = items.filter((i) => can(i[3]));
+
+                    return visible.length ? (
+                        <SidebarGroup key={group} className="px-2 py-0">
+                            <SidebarGroupLabel>{group}</SidebarGroupLabel>
+                            <SidebarMenu>
+                                {visible.map(([href, title, Icon]) => (
+                                    <SidebarMenuItem key={href}>
+                                        <SidebarMenuButton asChild isActive={isCurrentUrl(href)} tooltip={{ children: title }}>
+                                            <Link href={href} prefetch>
+                                                <Icon />
+                                                <span>{title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroup>
+                    ) : null;
+                })}
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
