@@ -11,6 +11,7 @@ import {
     payTone,
     Stat,
     statusTone,
+    useCan,
 } from '@/components/futsal/kit';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';

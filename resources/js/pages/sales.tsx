@@ -16,6 +16,7 @@ import {
     Panel,
     Seg,
     Stat,
+    useCan,
 } from '@/components/futsal/kit';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

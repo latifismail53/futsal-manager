@@ -79,18 +79,26 @@ const toneText: Record<string, string> = {
     blue: 'text-blue-600',
 };
 
+export function useCan(...roles: string[]) {
+    const role = usePage().props.auth.user?.role;
+
+    return role === 'owner' || roles.includes(role ?? '');
+}
+
 export function Stat({
     label,
     value,
     sub,
     tone,
     onClick,
+    compact,
 }: {
     label: ReactNode;
     value: ReactNode;
     sub?: ReactNode;
     tone?: string;
     onClick?: () => void;
+    compact?: boolean;
 }) {
     return (
         <Card
@@ -106,7 +114,8 @@ export function Stat({
                 </div>
                 <div
                     className={cn(
-                        'num mt-1 truncate text-lg font-semibold sm:text-xl',
+                        'num mt-1 truncate font-semibold',
+                        compact ? 'text-sm sm:text-base' : 'text-lg sm:text-xl',
                         tone && toneText[tone],
                     )}
                 >
