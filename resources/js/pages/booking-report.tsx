@@ -203,7 +203,7 @@ export default function BookingReport() {
                 <Loading rows={10} />
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
                         <Stat
                             label="Booking aktif"
                             value={num(d.summary.bookings)}
