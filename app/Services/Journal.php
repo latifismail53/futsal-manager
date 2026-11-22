@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\Acc;
+use App\Support\Row;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -82,7 +83,7 @@ class Journal
     public static function syncSale(int $id): void
     {
         self::remove('sale', $id);
-        $s = DB::table('sales')->find($id);
+        $s = Row::maybe('sales', $id);
         if (! $s) {
             return;
         }
@@ -120,7 +121,10 @@ class Journal
             $debits[$acc] = ($debits[$acc] ?? 0) + $it->qty * $it->price;
         }
         $label = $p->code.($p->supplier_name ? ' - '.$p->supplier_name : '');
-        $lines = collect($debits)->map(fn ($v, $a) => ['account_code' => $a, 'debit' => $v])->values()->all();
+        $lines = [];
+        foreach ($debits as $a => $v) {
+            $lines[] = ['account_code' => (string) $a, 'debit' => $v];
+        }
         $lines[] = ['account_code' => $p->method === 'credit' ? Acc::HUTANG : Acc::cash($p->method), 'credit' => $p->total];
         self::post($p->date, 'purchase', $id, "Pembelian {$label}", $lines);
         if ($p->method === 'credit' && $p->paid_date) {

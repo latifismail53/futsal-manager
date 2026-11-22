@@ -7,6 +7,7 @@ use App\Http\Requests\JournalRequest;
 use App\Services\FinancialReports;
 use App\Services\Insights;
 use App\Services\Journal;
+use App\Support\Row;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,7 +65,7 @@ class AccountingController extends Controller
     public function storeJournal(JournalRequest $request): JsonResponse
     {
         $d = $request->validated();
-        if (collect($d['lines'])->sum('debit') !== collect($d['lines'])->sum('credit')) {
+        if (array_sum(array_column($d['lines'], 'debit')) !== array_sum(array_column($d['lines'], 'credit'))) {
             throw new DomainException('Jurnal tidak seimbang');
         }
         $id = DB::transaction(fn () => Journal::post($d['date'], 'manual', null, $d['description'], $d['lines']));
@@ -74,7 +75,7 @@ class AccountingController extends Controller
 
     public function destroyJournal(int $id): JsonResponse
     {
-        $j = DB::table('journals')->find($id) ?? throw new DomainException('Jurnal tidak ditemukan');
+        $j = Row::find('journals', $id, 'Jurnal');
         if ($j->ref_type !== 'manual') {
             throw new DomainException('Jurnal otomatis hanya bisa diubah dari transaksi sumbernya');
         }
@@ -100,9 +101,10 @@ class AccountingController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /** @return array{0:string,1:string} */
     private function range(Request $r): array
     {
-        return [$r->input('from', today()->startOfMonth()->toDateString()), $r->input('to', today()->toDateString())];
+        return [$r->string('from', today()->startOfMonth()->toDateString())->toString(), $r->string('to', today()->toDateString())->toString()];
     }
 
     public function report(Request $request, string $type): JsonResponse

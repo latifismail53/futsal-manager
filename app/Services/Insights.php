@@ -3,15 +3,17 @@
 namespace App\Services;
 
 use App\Enums\Acc;
+use App\Support\Row;
 use Carbon\CarbonImmutable;
-use DomainException;
 use Illuminate\Support\Facades\DB;
+use stdClass;
 
 /**
  * Dashboard, statistik pelanggan, dan laporan pemesanan interaktif.
  */
 class Insights
 {
+    /** @return array<string, mixed> */
     public static function dashboard(): array
     {
         $t = today()->toDateString();
@@ -39,6 +41,7 @@ class Insights
         ];
     }
 
+    /** @return array<int, stdClass> */
     public static function customerStats(): array
     {
         $t = today()->toDateString();
@@ -57,9 +60,10 @@ class Insights
             })->all();
     }
 
+    /** @return array<string, mixed> */
     public static function customerHistory(int $id): array
     {
-        $c = DB::table('customers')->find($id) ?? throw new DomainException('Pelanggan tidak ditemukan');
+        $c = Row::find('customers', $id, 'Pelanggan');
         $bookings = Bookings::query()->where('b.customer_id', $id)->orderByDesc('b.date')->orderByDesc('b.start_hour')->get()->map(Bookings::decorate(...));
         $active = $bookings->where('status', '!=', 'batal');
         $fav = fn ($fn) => $active->countBy($fn)->sortDesc()->keys()->first();
@@ -72,6 +76,10 @@ class Insights
         ]];
     }
 
+    /**
+     * @param  array<string, mixed>  $q
+     * @return array<string, mixed>
+     */
     public static function bookingReport(array $q): array
     {
         [$open, $close] = Settings::hours();
@@ -88,7 +96,10 @@ class Insights
         $byDate = $byField = $byCust = $byStatus = [];
         $byWeekday = array_map(fn ($i) => ['weekday' => $i, 'count' => 0, 'hours' => 0, 'revenue' => 0], range(0, 6));
         $heat = array_fill(0, 7, array_fill(0, 24, 0));
-        $byHour = array_map(fn ($i) => ['hour' => $i, 'hours' => 0, 'revenue' => 0], range(0, 23));
+        $byHour = [];
+        for ($i = 0; $i < 24; $i++) {
+            $byHour[$i] = ['hour' => $i, 'hours' => 0, 'revenue' => 0.0];
+        }
         foreach ($rows as $r) {
             $byStatus[$r->status] ??= ['status' => $r->status, 'count' => 0, 'revenue' => 0];
             $byStatus[$r->status]['count']++;
@@ -99,17 +110,14 @@ class Insights
             $byField[$r->field_id] ??= ['field_id' => $r->field_id, 'name' => $r->field_name, 'color' => $r->field_color, 'count' => 0, 'hours' => 0, 'revenue' => 0];
             $byCust[$r->customer_id] ??= ['customer_id' => $r->customer_id, 'name' => $r->customer_name, 'team' => $r->team, 'count' => 0, 'hours' => 0, 'revenue' => 0, 'outstanding' => 0];
             $wd = CarbonImmutable::parse($r->date)->dayOfWeek;
-            foreach ([&$byDate[$r->date], &$byField[$r->field_id], &$byCust[$r->customer_id], &$byWeekday[$wd]] as &$g) {
-                $g['count']++;
-                $g['hours'] += $r->hours;
-                $g['revenue'] += $r->total;
-            }
-            unset($g);
+            $byDate[$r->date] = self::bump($byDate[$r->date], $r);
+            $byField[$r->field_id] = self::bump($byField[$r->field_id], $r);
+            $byCust[$r->customer_id] = self::bump($byCust[$r->customer_id], $r);
+            $byWeekday[$wd] = self::bump($byWeekday[$wd], $r);
             $byCust[$r->customer_id]['outstanding'] += $r->remaining;
             for ($x = $r->start_hour; $x < $r->end_hour; $x++) {
                 $heat[$wd][$x]++;
-                $byHour[$x]['hours']++;
-                $byHour[$x]['revenue'] += $r->total / $r->hours;
+                $byHour[$x] = ['hour' => $x, 'hours' => $byHour[$x]['hours'] + 1, 'revenue' => $byHour[$x]['revenue'] + $r->total / $r->hours];
             }
         }
         $allDates = [];
@@ -134,6 +142,20 @@ class Insights
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $g
+     * @return array<string, mixed>
+     */
+    private static function bump(array $g, stdClass $r): array
+    {
+        $g['count']++;
+        $g['hours'] += $r->hours;
+        $g['revenue'] += $r->total;
+
+        return $g;
+    }
+
+    /** @return list<array<string, int|null>> */
     public static function incomeMonthly(int $year): array
     {
         return array_map(function ($m) use ($year) {

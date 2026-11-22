@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StockAdjustmentRequest extends FormRequest
 {
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return [

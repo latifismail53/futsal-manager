@@ -24,6 +24,7 @@ class Settings
         return [(int) self::get('open_hour', 8) ?: 8, (int) self::get('close_hour', 24) ?: 24];
     }
 
+    /** @param  array<string, scalar|null>  $values */
     public static function put(array $values): void
     {
         foreach ($values as $key => $value) {

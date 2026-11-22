@@ -7,6 +7,7 @@ use App\Http\Requests\PurchaseRequest;
 use App\Http\Requests\SaleRequest;
 use App\Http\Requests\StockAdjustmentRequest;
 use App\Services\Inventory;
+use App\Support\Row;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ class TradeController extends Controller
 
     public function sale(int $id): JsonResponse
     {
-        return response()->json([...(array) DB::table('sales')->find($id), 'items' => DB::table('sale_items')->where('sale_id', $id)->get()]);
+        return response()->json([...(array) Row::find('sales', $id, 'Penjualan'), 'items' => DB::table('sale_items')->where('sale_id', $id)->get()]);
     }
 
     public function storeSale(SaleRequest $request): JsonResponse

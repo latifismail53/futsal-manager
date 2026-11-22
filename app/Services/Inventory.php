@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\Row;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -12,7 +13,8 @@ class Inventory
         DB::table($table)->where('id', $id)->update(['code' => $prefix.str_pad((string) $id, 5, '0', STR_PAD_LEFT)]);
     }
 
-    public static function createSale(array $d): object
+    /** @param  array<string, mixed>  $d */
+    public static function createSale(array $d): \stdClass
     {
         return DB::transaction(function () use ($d) {
             $products = DB::table('products')->whereIn('id', array_column($d['items'], 'product_id'))->lockForUpdate()->get()->keyBy('id');
@@ -36,7 +38,7 @@ class Inventory
             }
             Journal::syncSale($id);
 
-            return DB::table('sales')->find($id);
+            return Row::find('sales', $id);
         });
     }
 
@@ -51,7 +53,8 @@ class Inventory
         });
     }
 
-    public static function createPurchase(array $d): object
+    /** @param  array<string, mixed>  $d */
+    public static function createPurchase(array $d): \stdClass
     {
         return DB::transaction(function () use ($d) {
             $total = array_sum(array_map(fn ($it) => $it['qty'] * $it['price'], $d['items']));
@@ -65,7 +68,7 @@ class Inventory
                 }
                 DB::table('purchase_items')->insert(['purchase_id' => $id, 'product_id' => $pid, 'account_code' => $pid ? null : $it['account_code'], 'description' => $it['description'] ?? '', 'qty' => $it['qty'], 'price' => $it['price']]);
                 if ($pid) {
-                    $p = DB::table('products')->lockForUpdate()->find($pid);
+                    $p = Row::find('products', $pid, 'Produk', true);
                     $base = max($p->stock, 0);
                     $ns = $p->stock + $it['qty'];
                     $nc = $ns > 0 ? (int) round(($base * $p->cost + $it['qty'] * $it['price']) / ($base + $it['qty'])) : (int) $it['price'];
@@ -74,7 +77,7 @@ class Inventory
             }
             Journal::syncPurchase($id);
 
-            return DB::table('purchases')->find($id);
+            return Row::find('purchases', $id);
         });
     }
 
@@ -98,12 +101,13 @@ class Inventory
         });
     }
 
+    /** @param  list<array<string, mixed>>  $items */
     public static function adjust(string $date, array $items, ?string $note): int
     {
         return DB::transaction(function () use ($date, $items, $note) {
             $n = 0;
             foreach ($items as $it) {
-                $p = DB::table('products')->lockForUpdate()->find($it['product_id']) ?? throw new DomainException('Produk tidak ditemukan');
+                $p = Row::find('products', $it['product_id'], 'Produk', true);
                 $actual = (int) $it['actual_qty'];
                 $diff = $actual - $p->stock;
                 if (! $diff) {
@@ -123,16 +127,17 @@ class Inventory
     public static function deleteAdjustment(int $id): void
     {
         DB::transaction(function () use ($id) {
-            $a = DB::table('stock_adjustments')->find($id) ?? throw new DomainException('Data tidak ditemukan');
+            $a = Row::find('stock_adjustments', $id);
             DB::table('products')->where('id', $a->product_id)->decrement('stock', $a->diff);
             Journal::remove('adjust', $id);
             DB::table('stock_adjustments')->where('id', $id)->delete();
         });
     }
 
+    /** @return array<string, mixed> */
     public static function movements(int $productId): array
     {
-        $p = DB::table('products')->find($productId) ?? throw new DomainException('Produk tidak ditemukan');
+        $p = Row::find('products', $productId, 'Produk');
         $buy = DB::table('purchase_items as pi')->join('purchases as pu', 'pu.id', '=', 'pi.purchase_id')->where('pi.product_id', $p->id)
             ->selectRaw("pu.date, pu.code as ref, 'Pembelian' as type, CAST(pi.qty AS SIGNED) as qty, pi.price");
         $sell = DB::table('sale_items as si')->join('sales as s', 's.id', '=', 'si.sale_id')->where('si.product_id', $p->id)->where('si.track_stock', true)

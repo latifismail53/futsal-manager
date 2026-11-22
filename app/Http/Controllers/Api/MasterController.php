@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\Row;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class MasterController extends Controller
         $data = $request->validate(self::RULES[$type]);
         $id = DB::table($type)->insertGetId($data + ['created_at' => now(), 'updated_at' => now()]);
 
-        return response()->json(DB::table($type)->find($id), 201);
+        return response()->json(Row::find($type, $id), 201);
     }
 
     public function update(Request $request, string $type, int $id): JsonResponse
@@ -40,7 +41,7 @@ class MasterController extends Controller
         $rules = array_map(fn ($r) => str_replace('required|', 'sometimes|required|', $r), self::RULES[$type]);
         DB::table($type)->where('id', $id)->update($request->validate($rules) + ['updated_at' => now()]);
 
-        return response()->json(DB::table($type)->find($id));
+        return response()->json(Row::find($type, $id));
     }
 
     public function destroy(string $type, int $id): JsonResponse

@@ -4,16 +4,24 @@ namespace App\Services;
 
 use App\Enums\Acc;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use stdClass;
 
 /**
  * Laporan keuangan yang dihitung dari jurnal. Hasil di-cache per versi jurnal.
  */
 class FinancialReports
 {
-    private static function cached(string $key, callable $fn): mixed
+    /**
+     * @template T
+     *
+     * @param  Closure(): T  $fn
+     * @return T
+     */
+    private static function cached(string $key, Closure $fn): mixed
     {
         $v = Cache::get('reports:version', 0);
 
@@ -25,10 +33,11 @@ class FinancialReports
         return in_array($type, ['asset', 'expense'], true);
     }
 
-    /** @return Collection<int, object> */
+    /** @return Collection<int, stdClass> */
     public static function balances(?string $from, ?string $to): Collection
     {
-        return collect(self::cached("bal:{$from}:{$to}", function () use ($from, $to) {
+        /** @var array<int, stdClass> $rows */
+        $rows = self::cached("bal:{$from}:{$to}", function () use ($from, $to) {
             $sums = DB::table('journal_lines as l')->join('journals as j', 'j.id', '=', 'l.journal_id')
                 ->when($from, fn ($q) => $q->where('j.date', '>=', $from))
                 ->when($to, fn ($q) => $q->where('j.date', '<=', $to))
@@ -41,9 +50,12 @@ class FinancialReports
 
                 return (object) [...(array) $a, 'debit' => $d, 'credit' => $c, 'balance' => self::debitNormal($a->type) ? $d - $c : $c - $d];
             })->all();
-        }));
+        });
+
+        return collect($rows);
     }
 
+    /** @return array<string, mixed> */
     public static function trialBalance(string $from, string $to): array
     {
         $rows = self::balances($from, $to)->map(function ($r) {
@@ -55,6 +67,7 @@ class FinancialReports
         return ['rows' => $rows, 'total_debit' => $rows->sum('end_debit'), 'total_credit' => $rows->sum('end_credit')];
     }
 
+    /** @return array<string, mixed> */
     public static function incomeStatement(?string $from, string $to): array
     {
         $rows = self::balances($from, $to);
@@ -74,6 +87,7 @@ class FinancialReports
         ];
     }
 
+    /** @return array<string, mixed> */
     public static function balanceSheet(string $date): array
     {
         $rows = self::balances(null, $date);
@@ -109,7 +123,7 @@ class FinancialReports
         '2-2100' => 'Pinjaman / angsuran pokok bank', '3-1100' => 'Setoran modal pemilik', '3-1200' => 'Pengambilan prive pemilik',
     ];
 
-    private static function cfLabel(object $a): string
+    private static function cfLabel(stdClass $a): string
     {
         return self::CF_LABEL[$a->code] ?? match (true) {
             $a->type === 'revenue' => 'Penerimaan '.mb_strtolower(preg_replace('/^Pendapatan /', '', $a->name)),
@@ -119,13 +133,14 @@ class FinancialReports
         };
     }
 
+    /** @return array<string, mixed> */
     public static function cashFlow(string $from, string $to): array
     {
         return self::cached("cf:{$from}:{$to}", function () use ($from, $to) {
             $accs = DB::table('accounts')->get()->keyBy('code');
             $cash = $accs->where('is_cash', true)->keys()->all();
             $opening = (int) DB::table('journal_lines as l')->join('journals as j', 'j.id', '=', 'l.journal_id')
-                ->where('j.date', '<', $from)->whereIn('l.account_code', $cash)->sum(DB::raw('l.debit - l.credit'));
+                ->where('j.date', '<', $from)->whereIn('l.account_code', $cash)->selectRaw('COALESCE(SUM(l.debit), 0) - COALESCE(SUM(l.credit), 0) as b')->value('b');
             $lines = DB::table('journal_lines as l')->join('journals as j', 'j.id', '=', 'l.journal_id')
                 ->whereBetween('j.date', [$from, $to])->orderBy('j.id')->select('l.*', 'j.date')->get()->groupBy('journal_id');
             $groups = ['operating' => [], 'investing' => [], 'financing' => []];
@@ -149,8 +164,7 @@ class FinancialReports
                     $monthly[$m][$cat] += $amt;
                 }
             }
-            $arr = fn ($g) => collect($g)->filter(fn ($r) => $r['amount'])->sortKeys()->values();
-            [$o, $i, $f] = [$arr($groups['operating']), $arr($groups['investing']), $arr($groups['financing'])];
+            [$o, $i, $f] = [self::cfRows($groups['operating']), self::cfRows($groups['investing']), self::cfRows($groups['financing'])];
             $net = $o->sum('amount') + $i->sum('amount') + $f->sum('amount');
             ksort($monthly);
 
@@ -162,6 +176,16 @@ class FinancialReports
         });
     }
 
+    /**
+     * @param  array<string, array<string, mixed>>  $g
+     * @return Collection<int, array<string, mixed>>
+     */
+    private static function cfRows(array $g): Collection
+    {
+        return collect($g)->filter(fn (array $r) => (int) $r['amount'] !== 0)->sortKeys()->values();
+    }
+
+    /** @return array<string, mixed> */
     public static function ledger(string $account, string $from, string $to): array
     {
         $acc = DB::table('accounts')->where('code', $account)->firstOrFail();
@@ -182,6 +206,7 @@ class FinancialReports
         return ['account' => $acc, 'opening' => (int) $opening, 'rows' => $rows, 'closing' => (int) $bal];
     }
 
+    /** @return array<string, mixed> */
     public static function budget(int $year, int $mFrom, int $mTo): array
     {
         $from = CarbonImmutable::create($year, $mFrom, 1)->toDateString();

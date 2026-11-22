@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Support\Row;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use stdClass;
 
 class Bookings
 {
@@ -22,7 +24,7 @@ class Bookings
             ->select('b.*', 'c.name as customer_name', 'c.phone as customer_phone', 'c.team', 'f.name as field_name', 'f.color as field_color', DB::raw('COALESCE(p.paid,0) as paid'));
     }
 
-    public static function decorate(object $b): object
+    public static function decorate(stdClass $b): stdClass
     {
         $b->paid = (int) $b->paid;
         $b->payment_status = $b->paid <= 0 ? 'belum' : ($b->paid >= $b->total ? 'lunas' : 'dp');
@@ -32,6 +34,7 @@ class Bookings
         return $b;
     }
 
+    /** @param  array<string, mixed>  $f */
     public static function filter(Builder $q, array $f): Builder
     {
         return $q->when($f['from'] ?? null, fn ($q, $v) => $q->where('b.date', '>=', $v))
@@ -42,7 +45,10 @@ class Bookings
             ->when($f['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w->where('c.name', 'like', "%{$v}%")->orWhere('b.code', 'like', "%{$v}%")->orWhere('c.team', 'like', "%{$v}%")));
     }
 
-    /** @return Collection<int, object> */
+    /**
+     * @param  array<string, mixed>  $f
+     * @return Collection<int, stdClass>
+     */
     public static function list(array $f, int $limit = 1000): Collection
     {
         $rows = self::filter(self::query(), $f)->orderByDesc('b.date')->orderByDesc('b.start_hour')->limit(min($limit, 5000))->get()->map(self::decorate(...));
@@ -50,7 +56,7 @@ class Bookings
         return empty($f['payment_status']) ? $rows : $rows->where('payment_status', $f['payment_status'])->values();
     }
 
-    public static function find(int $id): object
+    public static function find(int $id): stdClass
     {
         $b = self::query()->where('b.id', $id)->first() ?? throw new DomainException('Booking tidak ditemukan');
         $b = self::decorate($b);
@@ -62,6 +68,7 @@ class Bookings
     /**
      * Validasi bentrok jadwal & hitung harga. Mengunci baris lapangan agar booking paralel tidak dobel.
      *
+     * @param  array<string, mixed>  $d
      * @return array{subtotal:int,discount:int,total:int}
      */
     public static function price(array $d, ?int $exceptId = null, bool $lock = false): array
@@ -87,6 +94,7 @@ class Bookings
         return ['subtotal' => $subtotal, 'discount' => $discount, 'total' => max(0, $subtotal - $discount)];
     }
 
+    /** @param  array<string, mixed>  $d */
     public static function customerId(array $d): int
     {
         if (! empty($d['customer_id'])) {
@@ -106,7 +114,8 @@ class Bookings
         return $code;
     }
 
-    public static function create(array $d): object
+    /** @param  array<string, mixed>  $d */
+    public static function create(array $d): stdClass
     {
         $id = DB::transaction(function () use ($d) {
             $price = self::price($d, null, true);
@@ -126,7 +135,8 @@ class Bookings
         return self::find($id);
     }
 
-    public static function update(int $id, array $d): object
+    /** @param  array<string, mixed>  $d */
+    public static function update(int $id, array $d): stdClass
     {
         DB::transaction(function () use ($id, $d) {
             $price = self::price($d, $id, true);
@@ -144,19 +154,20 @@ class Bookings
     {
         DB::transaction(function () use ($id, $status) {
             if ($status !== 'batal') {
-                $b = DB::table('bookings')->find($id);
-                self::price((array) $b, $id, true);
+                self::price((array) Row::find('bookings', $id, 'Booking'), $id, true);
             }
             DB::table('bookings')->where('id', $id)->update(['status' => $status, 'updated_at' => now()]);
             Journal::syncBooking($id);
         });
     }
 
+    /** @param  array<string, mixed>  $p */
     public static function insertPayment(int $bookingId, array $p): void
     {
         DB::table('booking_payments')->insert(['booking_id' => $bookingId, 'date' => $p['date'] ?? today()->toDateString(), 'amount' => (int) $p['amount'], 'method' => $p['method'] ?? 'cash', 'note' => $p['note'] ?? null, 'created_at' => now(), 'updated_at' => now()]);
     }
 
+    /** @return array<string, mixed> */
     public static function availability(string $date, ?int $fieldId = null, int $exclude = 0): array
     {
         [$open, $close] = Settings::hours();
@@ -188,6 +199,7 @@ class Bookings
         })];
     }
 
+    /** @return array<int, array{date:string,total:int,booked:int,free:int}> */
     public static function availabilityDays(string $from, int $days, ?int $fieldId = null): array
     {
         [$open, $close] = Settings::hours();
@@ -196,7 +208,7 @@ class Bookings
         $activeIds = DB::table('fields')->where('active', true)->pluck('id');
         $used = DB::table('bookings')->where('status', '!=', 'batal')->whereBetween('date', [$from, $to])
             ->when($fieldId, fn ($q) => $q->where('field_id', $fieldId), fn ($q) => $q->whereIn('field_id', $activeIds))
-            ->groupBy('date')->selectRaw('date, SUM(GREATEST(0, LEAST(end_hour, ?) - GREATEST(start_hour, ?))) h', [$close, $open])->pluck('h', 'date');
+            ->groupBy('date')->selectRaw('date, SUM(GREATEST(0, CAST(LEAST(end_hour, ?) AS SIGNED) - CAST(GREATEST(start_hour, ?) AS SIGNED))) h', [$close, $open])->pluck('h', 'date');
         $total = ($fieldId ? 1 : $activeIds->count()) * ($close - $open);
 
         return collect(range(0, $days - 1))->map(function ($i) use ($from, $used, $total) {
@@ -207,6 +219,10 @@ class Bookings
         })->all();
     }
 
+    /**
+     * @param  array<string, mixed>  $d
+     * @return array<string, mixed>
+     */
     public static function recurring(array $d): array
     {
         $weeks = min(max((int) ($d['weeks'] ?? 1), 1), 52);

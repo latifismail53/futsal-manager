@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\Acc;
 use App\Services\Journal;
 use App\Services\Pricing;
+use App\Support\Row;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -20,11 +21,13 @@ class DemoSeeder extends Seeder
         return $this->seed / 2147483648;
     }
 
+    /** @param  list<mixed>  $a */
     private function pick(array $a): mixed
     {
         return $a[(int) floor($this->rnd() * count($a))];
     }
 
+    /** @param  array<string, mixed>  $row */
     private function ins(string $table, array $row): int
     {
         if (in_array($table, ['fields', 'customers', 'suppliers', 'products', 'bookings', 'booking_payments', 'sales', 'purchases'], true)) {
@@ -83,7 +86,7 @@ class DemoSeeder extends Seeder
             foreach ($items as $it) {
                 DB::table('purchase_items')->insert(['purchase_id' => $id, 'product_id' => $it['product_id'] ?? null, 'account_code' => $it['account_code'] ?? null, 'description' => $it['description'], 'qty' => $it['qty'], 'price' => $it['price']]);
                 if (! empty($it['product_id'])) {
-                    $p = DB::table('products')->find($it['product_id']);
+                    $p = Row::find('products', $it['product_id']);
                     $ns = $p->stock + $it['qty'];
                     DB::table('products')->where('id', $p->id)->update(['stock' => $ns, 'cost' => $ns > 0 ? (int) round(($p->stock * $p->cost + $it['qty'] * $it['price']) / $ns) : $it['price']]);
                 }
@@ -96,7 +99,7 @@ class DemoSeeder extends Seeder
         $fnb = array_slice($products, 0, 6);
         $restock = function (string $date, bool $credit) use ($fnb, $addPurchase, $suppliers) {
             $items = array_map(function ($pid) {
-                $p = DB::table('products')->find($pid);
+                $p = Row::find('products', $pid);
 
                 return ['product_id' => $pid, 'description' => $p->name, 'qty' => 30 + (int) floor($this->rnd() * 30), 'price' => (int) round($p->price * (0.45 + $this->rnd() * 0.1) / 100) * 100];
             }, $fnb);
@@ -106,7 +109,7 @@ class DemoSeeder extends Seeder
             $items = [];
             $n = 1 + (int) floor($this->rnd() * 3);
             for ($i = 0; $i < $n; $i++) {
-                $p = DB::table('products')->find($this->pick($products));
+                $p = Row::find('products', $this->pick($products));
                 $qty = 1 + (int) floor($this->rnd() * ($p->category === 'rental' ? 3 : 8));
                 if (($p->track_stock && $p->stock < $qty) || isset($items[$p->id])) {
                     continue;

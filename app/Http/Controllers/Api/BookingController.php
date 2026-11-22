@@ -7,7 +7,7 @@ use App\Http\Requests\BookingRequest;
 use App\Services\Bookings;
 use App\Services\Journal;
 use App\Services\Pricing;
-use DomainException;
+use App\Support\Row;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +26,7 @@ class BookingController extends Controller
 
     public function quote(Request $request): JsonResponse
     {
-        $f = DB::table('fields')->find($request->integer('field_id'));
+        $f = Row::maybe('fields', $request->integer('field_id'));
 
         return response()->json(['subtotal' => $f ? Pricing::forHours($f, $request->integer('start'), $request->integer('end')) : 0]);
     }
@@ -82,7 +82,7 @@ class BookingController extends Controller
 
     public function deletePayment(int $pid): JsonResponse
     {
-        $p = DB::table('booking_payments')->find($pid) ?? throw new DomainException('Pembayaran tidak ditemukan');
+        $p = Row::find('booking_payments', $pid, 'Pembayaran');
         DB::transaction(function () use ($p) {
             DB::table('booking_payments')->where('id', $p->id)->delete();
             Journal::syncBooking($p->booking_id);
