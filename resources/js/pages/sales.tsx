@@ -336,6 +336,7 @@ function History() {
     const { data: rows, reload } = useApi<any[]>('/sales' + qs(r));
     const [detail, setDetail] = useState<any>(null);
     const { data: settings } = useApi('/settings');
+    const canDelete = useCan('admin');
     const sum = rows?.reduce((s, x) => s + x.total, 0) || 0;
     const del = async (id: number) => {
         if (!confirm('Hapus transaksi? Stok & jurnal akan dibalik.')) {
@@ -438,13 +439,15 @@ function History() {
                     onClose={() => setDetail(null)}
                     footer={
                         <div className="flex w-full flex-wrap justify-end gap-2">
-                            <Button
-                                variant="destructive"
-                                className="sm:mr-auto"
-                                onClick={() => del(detail.id)}
-                            >
-                                <Trash2 /> Hapus transaksi
-                            </Button>
+                            {canDelete && (
+                                <Button
+                                    variant="destructive"
+                                    className="sm:mr-auto"
+                                    onClick={() => del(detail.id)}
+                                >
+                                    <Trash2 /> Hapus transaksi
+                                </Button>
+                            )}
                             <Button
                                 variant="outline"
                                 onClick={() => saleReceipt(detail, settings)}

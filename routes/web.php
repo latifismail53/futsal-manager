@@ -40,6 +40,7 @@ Route::middleware(['auth'])->group(function () use ($ops, $fin) {
         Route::get('dashboard', [GeneralController::class, 'dashboard']);
         Route::get('settings', [GeneralController::class, 'settings']);
         Route::get('accounts', [AccountingController::class, 'accounts']);
+        Route::get('reports/income-monthly', [AccountingController::class, 'report'])->defaults('type', 'income-monthly');
         Route::get('{type}', [MasterController::class, 'index'])->whereIn('type', ['fields', 'customers', 'suppliers', 'products']);
 
         Route::middleware($ops)->group(function () {

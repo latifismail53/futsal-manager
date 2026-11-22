@@ -50,6 +50,7 @@ export default function BookingForm({
     const { data: customers, reload: reloadCust } = useApi<any[]>('/customers');
     const { data: settings } = useApi('/settings');
     const isEdit = !!booking?.id;
+    const canDelete = useCan('admin');
     const [f, setF] = useState<any>(() => ({
         field_id: booking?.field_id || preset?.field_id || '',
         date: booking?.date || preset?.date || todayStr(),
@@ -258,7 +259,7 @@ export default function BookingForm({
             onClose={onClose}
             footer={
                 <div className="flex w-full flex-wrap justify-end gap-2">
-                    {isEdit && (
+                    {isEdit && canDelete && (
                         <Button
                             variant="destructive"
                             className="sm:mr-auto"
@@ -685,7 +686,11 @@ export default function BookingForm({
                             )}
                         </div>
                         <div className="grid grid-cols-3 gap-2">
-                            <Stat label="Total" value={rp(detail.total)} />
+                            <Stat
+                                compact
+                                label="Total"
+                                value={rp(detail.total)}
+                            />
                             <Stat
                                 label="Dibayar"
                                 value={rp(detail.paid)}

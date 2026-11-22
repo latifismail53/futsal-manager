@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { Badge as UiBadge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 return [
@@ -131,6 +132,6 @@ return [
     |
     */
 
-    'serializable_classes' => [\stdClass::class, \Illuminate\Support\Collection::class],
+    'serializable_classes' => [stdClass::class, Collection::class],
 
 ];
