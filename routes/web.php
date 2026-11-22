@@ -19,8 +19,6 @@ Route::middleware(['auth'])->group(function () {
         Route::inertia('jam-kosong', 'availability')->name('availability');
         Route::inertia('kalender', 'calendar')->name('calendar');
         Route::inertia('pemesanan', 'bookings/index')->name('bookings');
-        Route::inertia('pemesanan/baru', 'bookings/form')->name('bookings.create');
-        Route::get('pemesanan/{id}', fn (int $id) => inertia('bookings/form', ['id' => $id]))->whereNumber('id')->name('bookings.edit');
         Route::inertia('penjualan', 'sales')->name('sales');
         Route::inertia('pelanggan', 'customers')->name('customers');
     });
