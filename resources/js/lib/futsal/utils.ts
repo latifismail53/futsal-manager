@@ -93,13 +93,15 @@ export function useApi<T = any>(url: string | null, deps: unknown[] = []) {
     return { data, error, loading, reload: load, setData };
 }
 
-export function downloadCSV(filename: string, rows: any[], cols: { label: string; key?: string; value?: (r: any) => unknown }[]) {
+export function downloadCSV(filename: string, rows: any[], cols?: { label: string; key?: string; value?: (r: any) => unknown }[]) {
+    cols ??= Object.keys(rows[0] || {}).map((k) => ({ label: k, key: k }));
+
     const esc = (v: unknown) => {
         const s = v == null ? '' : String(v);
 
         return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
-    const lines = [cols.map((c) => esc(c.label)).join(','), ...rows.map((r) => cols.map((c) => esc(c.value ? c.value(r) : r[c.key!])).join(','))];
+    const lines = [cols!.map((c) => esc(c.label)).join(','), ...rows.map((r) => cols!.map((c) => esc(c.value ? c.value(r) : r[c.key!])).join(','))];
     const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
