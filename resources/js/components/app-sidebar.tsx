@@ -61,7 +61,12 @@ export const NAV: [string, Item[]][] = [
     [
         'Analitik',
         [
-            ['/laporan-pemesanan', 'Laporan Pemesanan', BarChart3, ['admin', 'akuntan']],
+            [
+                '/laporan-pemesanan',
+                'Laporan Pemesanan',
+                BarChart3,
+                ['admin', 'akuntan'],
+            ],
             ['/pengaturan', 'Pengaturan Usaha', Settings, ['admin']],
         ],
     ],
@@ -97,7 +102,11 @@ export function AppSidebar() {
                             <SidebarMenu>
                                 {visible.map(([href, title, Icon]) => (
                                     <SidebarMenuItem key={href}>
-                                        <SidebarMenuButton asChild isActive={isCurrentUrl(href)} tooltip={{ children: title }}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={isCurrentUrl(href)}
+                                            tooltip={{ children: title }}
+                                        >
                                             <Link href={href} prefetch>
                                                 <Icon />
                                                 <span>{title}</span>

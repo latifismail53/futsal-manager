@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
 
-export const rp = (n: unknown) => 'Rp ' + Math.round(+(n as number) || 0).toLocaleString('id-ID');
-export const num = (n: unknown) => Math.round(+(n as number) || 0).toLocaleString('id-ID');
+export const rp = (n: unknown) =>
+    'Rp ' + Math.round(+(n as number) || 0).toLocaleString('id-ID');
+export const num = (n: unknown) =>
+    Math.round(+(n as number) || 0).toLocaleString('id-ID');
 export const rpAcc = (n: number) => (n < 0 ? '(' + num(-n) + ')' : num(n));
-export const pct = (n: number | null | undefined, d = 1) => (n == null || isNaN(n) ? '-' : (+n).toFixed(d).replace('.', ',') + '%');
+export const pct = (n: number | null | undefined, d = 1) =>
+    n == null || isNaN(n) ? '-' : (+n).toFixed(d).replace('.', ',') + '%';
 export const todayStr = () => {
     const d = new Date();
 
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 10);
 };
 export const addDays = (s: string, n: number) => {
     const d = new Date(s + 'T00:00:00Z');
@@ -22,10 +27,44 @@ export const monthEnd = (s = todayStr()) => {
 
     return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
 };
-export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-export const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+export const MONTHS = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+];
+export const MONTHS_FULL = [
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+];
 export const DAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-export const DAYS_FULL = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+export const DAYS_FULL = [
+    'Minggu',
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+];
 export const fmtDate = (s?: string | null) => {
     if (!s) {
         return '-';
@@ -41,9 +80,21 @@ export const fmtDateLong = (s: string) => {
     return `${DAYS_FULL[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS_FULL[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
 export const hh = (h: number) => String(h).padStart(2, '0') + ':00';
-export const STATUS: Record<string, string> = { booked: 'Dipesan', selesai: 'Selesai', batal: 'Batal' };
-export const PAY: Record<string, string> = { belum: 'Belum bayar', dp: 'DP', lunas: 'Lunas' };
-export const METHOD: Record<string, string> = { cash: 'Tunai', bank: 'Transfer/Bank', credit: 'Kredit (hutang)' };
+export const STATUS: Record<string, string> = {
+    booked: 'Dipesan',
+    selesai: 'Selesai',
+    batal: 'Batal',
+};
+export const PAY: Record<string, string> = {
+    belum: 'Belum bayar',
+    dp: 'DP',
+    lunas: 'Lunas',
+};
+export const METHOD: Record<string, string> = {
+    cash: 'Tunai',
+    bank: 'Transfer/Bank',
+    credit: 'Kredit (hutang)',
+};
 
 /** Ambil data JSON dengan cache memori singkat agar perpindahan halaman terasa instan. */
 const memo = new Map<string, { t: number; d: unknown }>();
@@ -93,7 +144,11 @@ export function useApi<T = any>(url: string | null, deps: unknown[] = []) {
     return { data, error, loading, reload: load, setData };
 }
 
-export function downloadCSV(filename: string, rows: any[], cols?: { label: string; key?: string; value?: (r: any) => unknown }[]) {
+export function downloadCSV(
+    filename: string,
+    rows: any[],
+    cols?: { label: string; key?: string; value?: (r: any) => unknown }[],
+) {
     cols ??= Object.keys(rows[0] || {}).map((k) => ({ label: k, key: k }));
 
     const esc = (v: unknown) => {
@@ -101,8 +156,15 @@ export function downloadCSV(filename: string, rows: any[], cols?: { label: strin
 
         return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
-    const lines = [cols!.map((c) => esc(c.label)).join(','), ...rows.map((r) => cols!.map((c) => esc(c.value ? c.value(r) : r[c.key!])).join(','))];
-    const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const lines = [
+        cols!.map((c) => esc(c.label)).join(','),
+        ...rows.map((r) =>
+            cols!.map((c) => esc(c.value ? c.value(r) : r[c.key!])).join(','),
+        ),
+    ];
+    const blob = new Blob(['\ufeff' + lines.join('\n')], {
+        type: 'text/csv;charset=utf-8',
+    });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = filename;
@@ -120,12 +182,31 @@ export function waLink(phone: string | null | undefined, text: string) {
     return `https://wa.me/${p}?text=${encodeURIComponent(text)}`;
 }
 
-const escHtml = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+const escHtml = (s: unknown) =>
+    String(s ?? '').replace(
+        /[&<>"]/g,
+        (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!,
+    );
 
-type Receipt = { settings?: any; title: string; meta?: [string, string][]; items?: { name: string; detail?: string; amount: string }[]; totals?: (string | number)[][]; footer?: string };
-export function printReceipt({ settings, title, meta = [], items = [], totals = [], footer }: Receipt) {
+type Receipt = {
+    settings?: any;
+    title: string;
+    meta?: [string, string][];
+    items?: { name: string; detail?: string; amount: string }[];
+    totals?: (string | number)[][];
+    footer?: string;
+};
+export function printReceipt({
+    settings,
+    title,
+    meta = [],
+    items = [],
+    totals = [],
+    footer,
+}: Receipt) {
     settings = settings || {};
-    const row = (l: unknown, r: unknown, b?: unknown) => `<tr${b ? ' class="b"' : ''}><td>${escHtml(l)}</td><td class="r">${escHtml(r)}</td></tr>`;
+    const row = (l: unknown, r: unknown, b?: unknown) =>
+        `<tr${b ? ' class="b"' : ''}><td>${escHtml(l)}</td><td class="r">${escHtml(r)}</td></tr>`;
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>
     body{font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;width:280px;margin:0 auto;padding:10px;color:#000}
     h1{font-size:14px;text-align:center;margin:0}.c{text-align:center}.r{text-align:right}
@@ -142,7 +223,8 @@ export function printReceipt({ settings, title, meta = [], items = [], totals = 
     <div class="c it">Dicetak ${new Date().toLocaleString('id-ID')}</div>
   </body></html>`;
     const f = document.createElement('iframe');
-    f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+    f.style.cssText =
+        'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
     document.body.appendChild(f);
     f.contentDocument!.open();
     f.contentDocument!.write(html);
@@ -154,19 +236,38 @@ export function printReceipt({ settings, title, meta = [], items = [], totals = 
     }, 250);
 }
 
-export const withTeam = (name?: string | null, team?: string | null) => (team && !String(name || '').includes(team) ? `${name} (${team})` : name || '');
+export const withTeam = (name?: string | null, team?: string | null) =>
+    team && !String(name || '').includes(team)
+        ? `${name} (${team})`
+        : name || '';
 
 export function bookingReceipt(b: any, settings: any) {
     printReceipt({
         settings,
         title: 'NOTA BOOKING LAPANGAN',
-        meta: [['No.', b.code], ['Tanggal main', fmtDateLong(b.date)], ['Jam', `${hh(b.start_hour)} - ${hh(b.end_hour)}`], ['Lapangan', b.field_name], ['Pelanggan', withTeam(b.customer_name, b.team)], ['Status', STATUS[b.status]]],
-        items: [{ name: `Sewa ${b.field_name}`, detail: `${b.end_hour - b.start_hour} jam`, amount: rp(b.subtotal) }],
+        meta: [
+            ['No.', b.code],
+            ['Tanggal main', fmtDateLong(b.date)],
+            ['Jam', `${hh(b.start_hour)} - ${hh(b.end_hour)}`],
+            ['Lapangan', b.field_name],
+            ['Pelanggan', withTeam(b.customer_name, b.team)],
+            ['Status', STATUS[b.status]],
+        ],
+        items: [
+            {
+                name: `Sewa ${b.field_name}`,
+                detail: `${b.end_hour - b.start_hour} jam`,
+                amount: rp(b.subtotal),
+            },
+        ],
         totals: [
             ['Subtotal', rp(b.subtotal)],
             ...(b.discount ? [['Diskon', '- ' + rp(b.discount)]] : []),
             ['TOTAL', rp(b.total), 1],
-            ...(b.payments || []).map((p: any) => [`Bayar ${fmtDate(p.date)} (${METHOD[p.method]})`, rp(p.amount)]),
+            ...(b.payments || []).map((p: any) => [
+                `Bayar ${fmtDate(p.date)} (${METHOD[p.method]})`,
+                rp(p.amount),
+            ]),
             ['Sisa tagihan', rp(b.remaining), 1],
         ],
     });
@@ -200,12 +301,31 @@ export function saleReceipt(sale: any, settings: any, cash?: number) {
     printReceipt({
         settings,
         title: 'NOTA PENJUALAN',
-        meta: [['No.', sale.code], ['Tanggal', fmtDate(sale.date)], ['Pelanggan', sale.customer_name || 'Umum'], ['Metode', METHOD[sale.method] || sale.method]],
-        items: (sale.items || []).map((i: any) => ({ name: i.name, detail: `${i.qty} x ${rp(i.price)}`, amount: rp(i.qty * i.price) })),
-        totals: [['TOTAL', rp(sale.total), 1], ...(paid > 0 ? [['Tunai', rp(paid)], ['Kembali', rp(Math.max(0, paid - sale.total))]] : [])],
+        meta: [
+            ['No.', sale.code],
+            ['Tanggal', fmtDate(sale.date)],
+            ['Pelanggan', sale.customer_name || 'Umum'],
+            ['Metode', METHOD[sale.method] || sale.method],
+        ],
+        items: (sale.items || []).map((i: any) => ({
+            name: i.name,
+            detail: `${i.qty} x ${rp(i.price)}`,
+            amount: rp(i.qty * i.price),
+        })),
+        totals: [
+            ['TOTAL', rp(sale.total), 1],
+            ...(paid > 0
+                ? [
+                      ['Tunai', rp(paid)],
+                      ['Kembali', rp(Math.max(0, paid - sale.total))],
+                  ]
+                : []),
+        ],
     });
 }
 
 export function useQueryParams() {
-    return new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    return new URLSearchParams(
+        typeof window !== 'undefined' ? window.location.search : '',
+    );
 }

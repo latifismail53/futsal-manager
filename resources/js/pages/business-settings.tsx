@@ -16,7 +16,13 @@ export default function BusinessSettings() {
             setF(data);
         }
     }, [data]);
-    const inp = (k: string, props: React.ComponentProps<'input'> = {}) => <Input value={f[k] ?? ''} onChange={(e) => setF({ ...f, [k]: e.target.value })} {...props} />;
+    const inp = (k: string, props: React.ComponentProps<'input'> = {}) => (
+        <Input
+            value={f[k] ?? ''}
+            onChange={(e) => setF({ ...f, [k]: e.target.value })}
+            {...props}
+        />
+    );
     const save = async () => {
         setBusy(true);
 
@@ -53,26 +59,68 @@ export default function BusinessSettings() {
     return (
         <Page>
             <Head title="Pengaturan Usaha" />
-            <PageHead title="Pengaturan usaha" desc="Identitas usaha, jam operasional, dan informasi pada nota/WhatsApp." />
+            <PageHead
+                title="Pengaturan usaha"
+                desc="Identitas usaha, jam operasional, dan informasi pada nota/WhatsApp."
+            />
             {!f ? (
                 <Loading />
             ) : (
                 <div className="grid max-w-3xl gap-4">
                     <Panel title="Profil usaha">
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <Field label="Nama usaha" className="sm:col-span-2">{inp('business_name')}</Field>
-                            <Field label="Alamat" className="sm:col-span-2">{inp('address')}</Field>
-                            <Field label="No. telepon / WhatsApp">{inp('phone')}</Field>
-                            <Field label="Rekening pembayaran">{inp('bank_info', { placeholder: 'BCA 123... a.n. ...' })}</Field>
-                            <Field label="Catatan kaki nota" className="sm:col-span-2">{inp('receipt_footer')}</Field>
-                            <Field label="Jam buka">{inp('open_hour', { type: 'number', min: 0, max: 23 })}</Field>
-                            <Field label="Jam tutup">{inp('close_hour', { type: 'number', min: 1, max: 24 })}</Field>
+                            <Field label="Nama usaha" className="sm:col-span-2">
+                                {inp('business_name')}
+                            </Field>
+                            <Field label="Alamat" className="sm:col-span-2">
+                                {inp('address')}
+                            </Field>
+                            <Field label="No. telepon / WhatsApp">
+                                {inp('phone')}
+                            </Field>
+                            <Field label="Rekening pembayaran">
+                                {inp('bank_info', {
+                                    placeholder: 'BCA 123... a.n. ...',
+                                })}
+                            </Field>
+                            <Field
+                                label="Catatan kaki nota"
+                                className="sm:col-span-2"
+                            >
+                                {inp('receipt_footer')}
+                            </Field>
+                            <Field label="Jam buka">
+                                {inp('open_hour', {
+                                    type: 'number',
+                                    min: 0,
+                                    max: 23,
+                                })}
+                            </Field>
+                            <Field label="Jam tutup">
+                                {inp('close_hour', {
+                                    type: 'number',
+                                    min: 1,
+                                    max: 24,
+                                })}
+                            </Field>
                         </div>
-                        <Button className="mt-4" onClick={save} disabled={busy}>Simpan</Button>
+                        <Button className="mt-4" onClick={save} disabled={busy}>
+                            Simpan
+                        </Button>
                     </Panel>
                     <Panel title="Data demo">
-                        <p className="mb-3 text-sm text-muted-foreground">Aplikasi diisi data contoh 3 bulan terakhir. Reset untuk membuat ulang data demo (semua data saat ini akan terhapus).</p>
-                        <Button variant="destructive" onClick={reset} disabled={busy}>Reset ke data demo</Button>
+                        <p className="mb-3 text-sm text-muted-foreground">
+                            Aplikasi diisi data contoh 3 bulan terakhir. Reset
+                            untuk membuat ulang data demo (semua data saat ini
+                            akan terhapus).
+                        </p>
+                        <Button
+                            variant="destructive"
+                            onClick={reset}
+                            disabled={busy}
+                        >
+                            Reset ke data demo
+                        </Button>
                     </Panel>
                 </div>
             )}

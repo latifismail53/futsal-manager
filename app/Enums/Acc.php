@@ -5,23 +5,41 @@ namespace App\Enums;
 final class Acc
 {
     public const KAS = '1-1100';
+
     public const BANK = '1-1200';
+
     public const PIUTANG = '1-1300';
+
     public const PERSEDIAAN = '1-1400';
+
     public const PERALATAN = '1-2100';
+
     public const BANGUNAN = '1-2200';
+
     public const AKUM = '1-2900';
+
     public const HUTANG = '2-1100';
+
     public const UANG_MUKA = '2-1200';
+
     public const HUTANG_BANK = '2-2100';
+
     public const MODAL = '3-1100';
+
     public const PRIVE = '3-1200';
+
     public const LABA_DITAHAN = '3-2100';
+
     public const PEND_SEWA = '4-1100';
+
     public const PEND_FNB = '4-1200';
+
     public const PEND_ALAT = '4-1300';
+
     public const PEND_LAIN = '4-9100';
+
     public const HPP = '5-1100';
+
     public const BEBAN_LAIN = '6-1900';
 
     /** @var list<array{0:string,1:string,2:string,3:string,4:bool}> */

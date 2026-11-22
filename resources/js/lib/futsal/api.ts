@@ -4,7 +4,11 @@ function xsrf(): string {
     return m ? decodeURIComponent(m[1]) : '';
 }
 
-async function req<T = any>(method: string, url: string, body?: unknown): Promise<T> {
+async function req<T = any>(
+    method: string,
+    url: string,
+    body?: unknown,
+): Promise<T> {
     const r = await fetch('/api' + url, {
         method,
         credentials: 'same-origin',
@@ -19,8 +23,12 @@ async function req<T = any>(method: string, url: string, body?: unknown): Promis
     const data = await r.json().catch(() => ({}));
 
     if (!r.ok) {
-        const first = data.errors ? (Object.values(data.errors)[0] as string[])[0] : null;
-        throw new Error(data.error || first || data.message || 'Terjadi kesalahan');
+        const first = data.errors
+            ? (Object.values(data.errors)[0] as string[])[0]
+            : null;
+        throw new Error(
+            data.error || first || data.message || 'Terjadi kesalahan',
+        );
     }
 
     return data as T;
@@ -34,4 +42,9 @@ export const api = {
 };
 
 export const qs = (o: Record<string, unknown>) =>
-    '?' + new URLSearchParams(Object.entries(o).filter(([, v]) => v !== '' && v != null).map(([k, v]) => [k, String(v)])).toString();
+    '?' +
+    new URLSearchParams(
+        Object.entries(o)
+            .filter(([, v]) => v !== '' && v != null)
+            .map(([k, v]) => [k, String(v)]),
+    ).toString();

@@ -143,8 +143,14 @@
 }
 
 @layer utilities {
-    .num { font-variant-numeric: tabular-nums; }
+    .num {
+        font-variant-numeric: tabular-nums;
+    }
 }
 @media print {
-    [data-slot='sidebar'], header, .no-print { display: none !important; }
+    [data-slot='sidebar'],
+    header,
+    .no-print {
+        display: none !important;
+    }
 }

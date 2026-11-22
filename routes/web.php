@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
 
-const OPS = 'role:admin,kasir';
-const FIN = 'role:akuntan';
+$ops = 'role:admin,kasir';
+$fin = 'role:akuntan';
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth'])->group(function () use ($ops, $fin) {
     // Halaman (Inertia)
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
-    Route::middleware(OPS)->group(function () {
+    Route::middleware($ops)->group(function () {
         Route::inertia('jam-kosong', 'availability')->name('availability');
         Route::inertia('kalender', 'calendar')->name('calendar');
         Route::inertia('pemesanan', 'bookings/index')->name('bookings');
@@ -29,20 +29,20 @@ Route::middleware(['auth'])->group(function () {
     });
     Route::inertia('pembelian', 'purchases')->middleware('role:admin,akuntan')->name('purchases');
     Route::inertia('laporan-pemesanan', 'booking-report')->middleware('role:admin,akuntan')->name('booking.report');
-    Route::middleware(FIN)->group(function () {
+    Route::middleware($fin)->group(function () {
         Route::inertia('akuntansi', 'accounting')->name('accounting');
         Route::inertia('laporan-keuangan', 'financials')->name('financials');
         Route::inertia('anggaran', 'budget')->name('budget');
     });
 
     // Endpoint data JSON (sesi + CSRF, untuk komponen interaktif)
-    Route::prefix('api')->group(function () {
+    Route::prefix('api')->group(function () use ($ops, $fin) {
         Route::get('dashboard', [GeneralController::class, 'dashboard']);
         Route::get('settings', [GeneralController::class, 'settings']);
         Route::get('accounts', [AccountingController::class, 'accounts']);
         Route::get('{type}', [MasterController::class, 'index'])->whereIn('type', ['fields', 'customers', 'suppliers', 'products']);
 
-        Route::middleware(OPS)->group(function () {
+        Route::middleware($ops)->group(function () {
             Route::get('availability', [BookingController::class, 'availability']);
             Route::get('availability/days', [BookingController::class, 'availabilityDays']);
             Route::get('bookings', [BookingController::class, 'index']);
@@ -87,7 +87,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('reports/bookings', [AccountingController::class, 'report'])->defaults('type', 'bookings');
         });
 
-        Route::middleware(FIN)->group(function () {
+        Route::middleware($fin)->group(function () {
             Route::post('accounts', [AccountingController::class, 'storeAccount']);
             Route::put('accounts/{code}', [AccountingController::class, 'updateAccount']);
             Route::delete('accounts/{code}', [AccountingController::class, 'destroyAccount']);

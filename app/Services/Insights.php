@@ -20,8 +20,8 @@ class Insights
         $cash = DB::table('accounts as a')->leftJoin('journal_lines as l', 'l.account_code', '=', 'a.code')->where('a.is_cash', true)
             ->groupBy('a.code', 'a.name')->selectRaw('a.code, a.name, CAST(COALESCE(SUM(l.debit) - SUM(l.credit),0) AS SIGNED) bal')->get();
         $todayBookings = Bookings::query()->where('b.date', $t)->where('b.status', '!=', 'batal')->orderBy('b.start_hour')->orderBy('b.field_id')->get()->map(Bookings::decorate(...));
-        $unpaid = Bookings::query()->where('b.status', '!=', 'batal')->whereRaw('b.total > COALESCE(p.paid,0)')->selectRaw('COUNT(*) n, SUM(b.total - COALESCE(p.paid,0)) v')->reorder()->first();
-        $bal = fn ($code, $sign) => (int) DB::table('journal_lines')->where('account_code', $code)->sum(DB::raw($sign ? 'debit - credit' : 'credit - debit'));
+        $unpaid = Bookings::query()->where('b.status', '!=', 'batal')->whereRaw('b.total > COALESCE(p.paid,0)')->select(DB::raw('COUNT(*) n'), DB::raw('SUM(b.total - COALESCE(p.paid,0)) v'))->reorder()->first();
+        $bal = fn ($code, $sign) => (int) DB::table('journal_lines')->where('account_code', $code)->selectRaw($sign ? 'COALESCE(SUM(debit), 0) - COALESCE(SUM(credit), 0) as b' : 'COALESCE(SUM(credit), 0) - COALESCE(SUM(debit), 0) as b')->value('b');
         $daily = DB::table('journal_lines as l')->join('journals as j', 'j.id', '=', 'l.journal_id')->join('accounts as a', 'a.code', '=', 'l.account_code')
             ->whereBetween('j.date', [today()->subDays(29)->toDateString(), $t])->groupBy('j.date')->orderBy('j.date')
             ->selectRaw("j.date, CAST(SUM(CASE WHEN a.type='revenue' THEN l.credit-l.debit ELSE 0 END) AS SIGNED) revenue, CAST(SUM(CASE WHEN a.type='expense' THEN l.debit-l.credit ELSE 0 END) AS SIGNED) expense")->get();
