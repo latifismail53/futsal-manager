@@ -1,0 +1,19 @@
+name: Permintaan fitur
+description: Usulkan fitur atau perbaikan baru
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Masalah yang ingin diselesaikan
+      description: Ceritakan kebutuhan di operasional atau pembukuan rental futsal Anda.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Usulan solusi
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatif yang sudah dicoba

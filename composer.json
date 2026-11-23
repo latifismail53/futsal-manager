@@ -1,11 +1,17 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "latifismail53/futsal-manager",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Aplikasi manajemen rental futsal: booking, kasir, pembelian, stok, akuntansi, dan laporan keuangan (Laravel 13 + Inertia + React + shadcn/ui).",
     "keywords": [
         "laravel",
-        "framework"
+        "inertia",
+        "react",
+        "shadcn-ui",
+        "futsal",
+        "booking",
+        "pos",
+        "accounting"
     ],
     "license": "MIT",
     "require": {
@@ -97,8 +103,7 @@
         "laravel": {
             "dont-discover": [],
             "installer": {
-                "post-create-project": [
-                ]
+                "post-create-project": []
             }
         }
     },
@@ -112,5 +117,6 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "homepage": "https://github.com/latifismail53/futsal-manager"
 }
