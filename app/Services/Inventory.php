@@ -23,6 +23,9 @@ class Inventory
                 if ($p->track_stock && $p->stock < $it['qty']) {
                     throw new DomainException("Stok {$p->name} tidak cukup (sisa {$p->stock})");
                 }
+                if (isset($it['price']) && (int) $it['price'] !== (int) $p->price) {
+                    throw new DomainException("Harga {$p->name} sudah berubah menjadi Rp ".number_format($p->price, 0, ',', '.').'. Muat ulang halaman kasir.');
+                }
 
                 return ['p' => $p, 'qty' => (int) $it['qty'], 'price' => (int) $p->price];
             }, $d['items']);

@@ -70,7 +70,8 @@ class SecurityTest extends TestCase
         $this->as('kasir');
         $id = DB::table('products')->insertGetId(['name' => 'Air', 'category' => 'fnb', 'unit' => 'btl', 'price' => 5000, 'cost' => 0, 'stock' => 10, 'track_stock' => 1, 'active' => 1]);
 
-        $this->postJson('/api/sales', ['method' => 'cash', 'items' => [['product_id' => $id, 'qty' => 2, 'price' => 1]]])
+        $this->postJson('/api/sales', ['method' => 'cash', 'items' => [['product_id' => $id, 'qty' => 2, 'price' => 1]]])->assertStatus(422);
+        $this->postJson('/api/sales', ['method' => 'cash', 'items' => [['product_id' => $id, 'qty' => 2]]])
             ->assertCreated()->assertJsonPath('total', 10000);
     }
 

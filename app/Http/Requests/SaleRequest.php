@@ -17,6 +17,7 @@ class SaleRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
+            'items.*.price' => ['nullable', 'integer', 'min:0'],
         ];
     }
 
