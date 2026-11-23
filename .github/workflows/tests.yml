@@ -77,11 +77,11 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Frontend checks
+      - name: Frontend build & checks (build generates Wayfinder routes)
         run: |
+          pnpm run build
           pnpm run check
           pnpm run types:check
-          pnpm run build
 
       - name: PHP code style
         run: vendor/bin/pint --test
