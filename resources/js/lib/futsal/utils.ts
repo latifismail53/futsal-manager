@@ -144,6 +144,13 @@ export function useApi<T = any>(url: string | null, deps: unknown[] = []) {
     return { data, error, loading, reload: load, setData };
 }
 
+const toText = (v: unknown): string =>
+    v == null
+        ? ''
+        : typeof v === 'object'
+          ? JSON.stringify(v)
+          : String(v as string | number | boolean | bigint);
+
 export function downloadCSV(
     filename: string,
     rows: any[],
@@ -152,7 +159,7 @@ export function downloadCSV(
     cols ??= Object.keys(rows[0] || {}).map((k) => ({ label: k, key: k }));
 
     const esc = (v: unknown) => {
-        const s = v == null ? '' : String(v);
+        const s = toText(v);
 
         return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
@@ -183,7 +190,7 @@ export function waLink(phone: string | null | undefined, text: string) {
 }
 
 const escHtml = (s: unknown) =>
-    String(s ?? '').replace(
+    toText(s).replace(
         /[&<>"]/g,
         (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!,
     );
