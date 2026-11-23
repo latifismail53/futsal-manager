@@ -166,7 +166,7 @@ export function downloadCSV(
             s = "'" + s;
         }
 
-        return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        return /[",\r\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
     const lines = [
         cols!.map((c) => esc(c.label)).join(','),
