@@ -115,8 +115,10 @@ class SecurityTest extends TestCase
             ->assertSuccessful();
         $this->assertSame('akuntan', $user->fresh()?->role);
 
+        $this->artisan('futsal:user', ['email' => 'kosong@b.com', '--role' => ''])->assertFailed();
+        $this->assertDatabaseMissing('users', ['email' => 'kosong@b.com']);
+
         $this->artisan('futsal:user', ['email' => 'a@b.com', '--role' => 'superadmin'])
-            ->expectsQuestion('Password', 'x')->expectsQuestion('Ulangi password', 'x')
             ->assertFailed();
     }
 }

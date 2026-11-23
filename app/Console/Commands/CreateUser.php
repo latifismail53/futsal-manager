@@ -20,7 +20,12 @@ class CreateUser extends Command
     {
         $email = (string) $this->argument('email');
         $user = User::query()->firstOrNew(['email' => strtolower($email)]);
-        $role = (string) ($this->option('role') ?: ($user->exists ? $user->role : 'owner'));
+        $role = (string) ($this->option('role') ?? ($user->exists ? $user->role : 'owner'));
+        if (! in_array($role, self::ROLES, true)) {
+            $this->error('Peran harus salah satu dari: '.implode(', ', self::ROLES));
+
+            return self::FAILURE;
+        }
         $password = (string) $this->secret('Password');
 
         $validator = Validator::make(
