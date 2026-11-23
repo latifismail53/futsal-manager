@@ -21,7 +21,7 @@ class GeneralController extends Controller
 
     public function settings(): JsonResponse
     {
-        return response()->json(Settings::all());
+        return response()->json([...Settings::all(), 'allow_reset' => (bool) config('futsal.allow_reset')]);
     }
 
     public function saveSettings(Request $request): JsonResponse

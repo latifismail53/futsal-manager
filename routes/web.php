@@ -36,7 +36,7 @@ Route::middleware(['auth'])->group(function () use ($ops, $fin) {
     });
 
     // Endpoint data JSON (sesi + CSRF, untuk komponen interaktif)
-    Route::prefix('api')->group(function () use ($ops, $fin) {
+    Route::prefix('api')->middleware('throttle:api')->group(function () use ($ops, $fin) {
         Route::get('dashboard', [GeneralController::class, 'dashboard']);
         Route::get('settings', [GeneralController::class, 'settings']);
         Route::get('accounts', [AccountingController::class, 'accounts']);
@@ -56,7 +56,6 @@ Route::middleware(['auth'])->group(function () use ($ops, $fin) {
             Route::put('bookings/{id}', [BookingController::class, 'update']);
             Route::post('bookings/{id}/status', [BookingController::class, 'status']);
             Route::post('bookings/{id}/payments', [BookingController::class, 'addPayment']);
-            Route::delete('booking-payments/{pid}', [BookingController::class, 'deletePayment']);
             Route::get('customer-stats', [GeneralController::class, 'customerStats']);
             Route::get('customers/{id}/history', [GeneralController::class, 'customerHistory']);
             Route::post('customers', [MasterController::class, 'store'])->defaults('type', 'customers');
@@ -68,6 +67,7 @@ Route::middleware(['auth'])->group(function () use ($ops, $fin) {
         Route::middleware('role:admin')->group(function () {
             Route::delete('bookings/{id}', [BookingController::class, 'destroy']);
             Route::delete('sales/{id}', [TradeController::class, 'destroySale']);
+            Route::delete('booking-payments/{pid}', [BookingController::class, 'deletePayment']);
             Route::post('{type}', [MasterController::class, 'store'])->whereIn('type', ['fields', 'suppliers', 'products']);
             Route::put('{type}/{id}', [MasterController::class, 'update'])->whereIn('type', ['fields', 'customers', 'suppliers', 'products']);
             Route::delete('{type}/{id}', [MasterController::class, 'destroy'])->whereIn('type', ['fields', 'customers', 'suppliers', 'products']);
@@ -76,7 +76,6 @@ Route::middleware(['auth'])->group(function () use ($ops, $fin) {
             Route::delete('stock-adjustments/{id}', [TradeController::class, 'destroyAdjustment']);
             Route::get('products/{id}/movements', [TradeController::class, 'movements']);
             Route::put('settings', [GeneralController::class, 'saveSettings']);
-            Route::post('reset-demo', [GeneralController::class, 'resetDemo']);
         });
 
         Route::middleware('role:admin,akuntan')->group(function () {
@@ -87,6 +86,8 @@ Route::middleware(['auth'])->group(function () use ($ops, $fin) {
             Route::delete('purchases/{id}', [TradeController::class, 'destroyPurchase']);
             Route::get('reports/bookings', [AccountingController::class, 'report'])->defaults('type', 'bookings');
         });
+
+        Route::post('reset-demo', [GeneralController::class, 'resetDemo'])->middleware('role:owner');
 
         Route::middleware($fin)->group(function () {
             Route::post('accounts', [AccountingController::class, 'storeAccount']);

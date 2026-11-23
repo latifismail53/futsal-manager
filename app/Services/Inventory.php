@@ -24,7 +24,7 @@ class Inventory
                     throw new DomainException("Stok {$p->name} tidak cukup (sisa {$p->stock})");
                 }
 
-                return ['p' => $p, 'qty' => (int) $it['qty'], 'price' => (int) ($it['price'] ?? $p->price)];
+                return ['p' => $p, 'qty' => (int) $it['qty'], 'price' => (int) $p->price];
             }, $d['items']);
             $total = array_sum(array_map(fn ($r) => $r['qty'] * $r['price'], $rows));
             $id = DB::table('sales')->insertGetId(['date' => $d['date'] ?? today()->toDateString(), 'customer_name' => $d['customer_name'] ?? null, 'method' => $d['method'] ?? 'cash',

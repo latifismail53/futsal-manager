@@ -16,6 +16,7 @@ class TradeController extends Controller
 {
     public function sales(Request $request): JsonResponse
     {
+        $this->validateDates($request, 'from', 'to');
         $items = DB::table('sale_items')->groupBy('sale_id')->selectRaw("sale_id, GROUP_CONCAT(CONCAT(name, ' x', qty) SEPARATOR ', ') items_text");
 
         return response()->json(DB::table('sales as s')->leftJoinSub($items, 'i', 'i.sale_id', '=', 's.id')
@@ -42,6 +43,7 @@ class TradeController extends Controller
 
     public function purchases(Request $request): JsonResponse
     {
+        $this->validateDates($request, 'from', 'to');
         $items = DB::table('purchase_items')->groupBy('purchase_id')->selectRaw("purchase_id, GROUP_CONCAT(description SEPARATOR ', ') items_text");
 
         return response()->json(DB::table('purchases as p')->leftJoin('suppliers as s', 's.id', '=', 'p.supplier_id')->leftJoinSub($items, 'i', 'i.purchase_id', '=', 'p.id')
@@ -78,6 +80,8 @@ class TradeController extends Controller
 
     public function adjustments(Request $request): JsonResponse
     {
+        $this->validateDates($request, 'from', 'to');
+
         return response()->json(DB::table('stock_adjustments as a')->join('products as p', 'p.id', '=', 'a.product_id')
             ->whereBetween('a.date', [$request->input('from', today()->startOfMonth()->toDateString()), $request->input('to', today()->toDateString())])
             ->orderByDesc('a.date')->orderByDesc('a.id')->select('a.*', 'p.name', 'p.unit')->get());

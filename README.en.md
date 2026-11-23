@@ -65,7 +65,26 @@ pnpm run build
 php artisan serve
 ```
 
-Demo accounts (password `password`): `owner@futsal.test`, `admin@futsal.test`, `kasir@futsal.test`, `akuntan@futsal.test`. Remove them and set `FUTSAL_ALLOW_RESET=false` before going to production.
+Demo accounts (password `password`): `owner@futsal.test`, `admin@futsal.test`, `kasir@futsal.test`, `akuntan@futsal.test`. They are only seeded outside production.
+
+For production, set `APP_ENV=production`, `APP_DEBUG=false`, `FUTSAL_ALLOW_RESET=false`, an `https://` `APP_URL` and `SESSION_SECURE_COOKIE=true` **before** running `php artisan optimize`. Create real accounts with `php artisan futsal:user owner@example.com --role=owner` (the password is prompted interactively).
+
+## Security
+
+Role checks run on the server, logins are rate limited, 2FA is available, public registration is disabled, every request uses session + CSRF, input goes through Form Requests, and responses carry standard security headers. CSV exports neutralise spreadsheet formulas. Stock and cost can only change through purchases, sales or stock counts, so inventory always matches the journals. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
+## Limitations
+
+- No user-management screen yet; accounts are created with `php artisan futsal:user`.
+- Single business, single location, Rupiah only.
+- Bookings use whole hours; opening hours cannot cross midnight; no customer self-service booking.
+- Payments are recorded manually (no QRIS/payment gateway); WhatsApp uses `wa.me` links, not automatic sending.
+- Basic accounting only: no tax, automatic depreciation, bank reconciliation or period closing; no audit log.
+- Cashiers can give booking discounts without approval (POS prices always come from the product master); the dashboard shows financial totals to every role.
+- CSV export and browser printing only (no PDF/Excel yet).
+- The UI is in Indonesian, except the starter-kit login, password-reset and 2FA pages, which are still in English.
+- Requires MySQL 8 and Redis; password reset needs mail settings; default timezone is `Asia/Jakarta`.
+- No Content Security Policy yet; no third-party security audit.
 
 ## Testing
 

@@ -1,7 +1,14 @@
 import { Head, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Field, Loading, Page, PageHead, Panel } from '@/components/futsal/kit';
+import {
+    Field,
+    Loading,
+    Page,
+    PageHead,
+    Panel,
+    useCan,
+} from '@/components/futsal/kit';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/futsal/api';
@@ -10,6 +17,7 @@ import { invalidate, useApi } from '@/lib/futsal/utils';
 export default function BusinessSettings() {
     const { data } = useApi('/settings');
     const [f, setF] = useState<any>(null);
+    const isOwner = useCan();
     const [busy, setBusy] = useState(false);
     useEffect(() => {
         if (data) {
@@ -108,20 +116,22 @@ export default function BusinessSettings() {
                             Simpan
                         </Button>
                     </Panel>
-                    <Panel title="Data demo">
-                        <p className="mb-3 text-sm text-muted-foreground">
-                            Aplikasi diisi data contoh 3 bulan terakhir. Reset
-                            untuk membuat ulang data demo (semua data saat ini
-                            akan terhapus).
-                        </p>
-                        <Button
-                            variant="destructive"
-                            onClick={reset}
-                            disabled={busy}
-                        >
-                            Reset ke data demo
-                        </Button>
-                    </Panel>
+                    {isOwner && f.allow_reset && (
+                        <Panel title="Data demo">
+                            <p className="mb-3 text-sm text-muted-foreground">
+                                Aplikasi diisi data contoh 3 bulan terakhir.
+                                Reset untuk membuat ulang data demo (semua data
+                                saat ini akan terhapus).
+                            </p>
+                            <Button
+                                variant="destructive"
+                                onClick={reset}
+                                disabled={busy}
+                            >
+                                Reset ke data demo
+                            </Button>
+                        </Panel>
+                    )}
                 </div>
             )}
         </Page>

@@ -52,6 +52,7 @@ class AccountingController extends Controller
 
     public function journals(Request $request): JsonResponse
     {
+        $this->validateDates($request, 'from', 'to');
         $js = DB::table('journals')->whereBetween('date', [$request->input('from', '0000-01-01'), $request->input('to', '9999-12-31')])
             ->when($request->input('ref_type'), fn ($q, $v) => $q->where('ref_type', $v))
             ->when($request->input('q'), fn ($q, $v) => $q->where('description', 'like', "%{$v}%"))
@@ -109,6 +110,7 @@ class AccountingController extends Controller
 
     public function report(Request $request, string $type): JsonResponse
     {
+        $this->validateDates($request, 'from', 'to', 'date');
         [$from, $to] = $this->range($request);
 
         return response()->json(match ($type) {
