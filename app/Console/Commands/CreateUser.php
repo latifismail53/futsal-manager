@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
-#[Signature('futsal:user {email} {--name= : Nama pengguna} {--role=owner : owner, admin, kasir, atau akuntan}')]
+#[Signature('futsal:user {email} {--name= : Nama pengguna} {--role= : owner, admin, kasir, atau akuntan (akun baru: owner; akun lama: peran tetap)}')]
 #[Description('Buat atau perbarui akun pengguna beserta perannya (password diminta secara interaktif)')]
 class CreateUser extends Command
 {
@@ -18,7 +18,8 @@ class CreateUser extends Command
     public function handle(): int
     {
         $email = (string) $this->argument('email');
-        $role = (string) $this->option('role');
+        $user = User::query()->firstOrNew(['email' => strtolower($email)]);
+        $role = (string) ($this->option('role') ?: ($user->exists ? $user->role : 'owner'));
         $password = (string) $this->secret('Password');
 
         $validator = Validator::make(
@@ -33,7 +34,6 @@ class CreateUser extends Command
             return self::FAILURE;
         }
 
-        $user = User::query()->firstOrNew(['email' => strtolower($email)]);
         $user->forceFill([
             'name' => $this->option('name') ?: ($user->name ?? strstr($email, '@', true)),
             'password' => $password,

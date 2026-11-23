@@ -97,6 +97,12 @@ class SecurityTest extends TestCase
         $this->assertSame('akuntan', $user->role);
         $this->assertTrue(Hash::check('S4ndi-Kuat!2026', $user->password));
 
+        $this->artisan('futsal:user', ['email' => 'pemilik@usaha.com'])
+            ->expectsQuestion('Password', 'S4ndi-Baru!2026')
+            ->expectsQuestion('Ulangi password', 'S4ndi-Baru!2026')
+            ->assertSuccessful();
+        $this->assertSame('akuntan', $user->fresh()?->role);
+
         $this->artisan('futsal:user', ['email' => 'a@b.com', '--role' => 'superadmin'])
             ->expectsQuestion('Password', 'x')->expectsQuestion('Ulangi password', 'x')
             ->assertFailed();
