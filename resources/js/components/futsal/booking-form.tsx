@@ -724,15 +724,17 @@ export default function BookingForm({
                                         <td>{p.note}</td>
                                         <td className="r">{rp(p.amount)}</td>
                                         <td>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="size-7 text-red-600"
-                                                onClick={() => delPay(p.id)}
-                                                aria-label="Hapus pembayaran"
-                                            >
-                                                <X />
-                                            </Button>
+                                            {canDelete && (
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    className="size-7 text-red-600"
+                                                    onClick={() => delPay(p.id)}
+                                                    aria-label="Hapus pembayaran"
+                                                >
+                                                    <X />
+                                                </Button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

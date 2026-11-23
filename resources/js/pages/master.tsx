@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 type Col = [
     key: string,
     label: string,
-    type?: 'money' | 'number' | 'color' | 'bool' | 'cat',
+    type?: 'money' | 'number' | 'color' | 'bool' | 'cat' | 'readonly',
 ];
 const CONF: Record<
     string,
@@ -61,7 +61,7 @@ const CONF: Record<
             ['unit', 'Satuan'],
             ['price', 'Harga jual', 'money'],
             ['cost', 'HPP', 'money'],
-            ['stock', 'Stok', 'number'],
+            ['stock', 'Stok', 'readonly'],
             ['min_stock', 'Stok minimum', 'number'],
             ['track_stock', 'Lacak stok', 'bool'],
             ['active', 'Aktif', 'bool'],
@@ -72,7 +72,6 @@ const CONF: Record<
             unit: 'pcs',
             price: 0,
             cost: 0,
-            stock: 0,
             min_stock: 10,
             track_stock: 1,
             active: 1,
@@ -103,7 +102,8 @@ const CAT: Record<string, string> = {
     rental: 'Sewa perlengkapan',
     other: 'Lainnya',
 };
-const isNum = (t?: string) => t === 'money' || t === 'number';
+const isNum = (t?: string) =>
+    t === 'money' || t === 'number' || t === 'readonly';
 
 export default function MasterData() {
     const [tab, setTab] = useState('fields');
@@ -269,86 +269,96 @@ function Crud({ table }: { table: string }) {
                     }
                 >
                     <div className="grid gap-3 sm:grid-cols-2">
-                        {c.cols.map(([k, l, t]) =>
-                            t === 'bool' ? (
-                                <label
-                                    key={k}
-                                    className="flex items-center gap-2 text-sm"
-                                >
-                                    <Checkbox
-                                        checked={!!edit[k]}
-                                        onCheckedChange={(v) =>
-                                            setEdit({ ...edit, [k]: v ? 1 : 0 })
-                                        }
-                                    />{' '}
-                                    {l}
-                                </label>
-                            ) : (
-                                <Field
-                                    key={k}
-                                    label={l}
-                                    className={cn(
-                                        (k === 'notes' ||
-                                            k === 'address' ||
-                                            k === 'name') &&
-                                            'sm:col-span-2',
-                                    )}
-                                >
-                                    {t === 'money' ? (
-                                        <MoneyInput
-                                            value={edit[k]}
-                                            onChange={(v) =>
+                        {c.cols
+                            .filter(([, , t]) => t !== 'readonly')
+                            .map(([k, l, t]) =>
+                                t === 'bool' ? (
+                                    <label
+                                        key={k}
+                                        className="flex items-center gap-2 text-sm"
+                                    >
+                                        <Checkbox
+                                            checked={!!edit[k]}
+                                            onCheckedChange={(v) =>
                                                 setEdit({
                                                     ...edit,
-                                                    [k]: v || 0,
+                                                    [k]: v ? 1 : 0,
                                                 })
                                             }
-                                        />
-                                    ) : t === 'cat' ? (
-                                        <NativeSelect
-                                            value={edit[k]}
-                                            onChange={(e) =>
-                                                setEdit({
-                                                    ...edit,
-                                                    [k]: e.target.value,
-                                                })
-                                            }
-                                        >
-                                            {Object.entries(CAT).map(
-                                                ([a, b]) => (
-                                                    <option key={a} value={a}>
-                                                        {b}
-                                                    </option>
-                                                ),
-                                            )}
-                                        </NativeSelect>
-                                    ) : (
-                                        <Input
-                                            type={
-                                                t === 'number'
-                                                    ? 'number'
-                                                    : t === 'color'
-                                                      ? 'color'
-                                                      : 'text'
-                                            }
-                                            className={cn(
-                                                t === 'color' && 'h-9 p-1',
-                                            )}
-                                            value={edit[k] ?? ''}
-                                            onChange={(e) =>
-                                                setEdit({
-                                                    ...edit,
-                                                    [k]:
-                                                        t === 'number'
-                                                            ? +e.target.value
-                                                            : e.target.value,
-                                                })
-                                            }
-                                        />
-                                    )}
-                                </Field>
-                            ),
-                        )}
+                                        />{' '}
+                                        {l}
+                                    </label>
+                                ) : (
+                                    <Field
+                                        key={k}
+                                        label={l}
+                                        className={cn(
+                                            (k === 'notes' ||
+                                                k === 'address' ||
+                                                k === 'name') &&
+                                                'sm:col-span-2',
+                                        )}
+                                    >
+                                        {t === 'money' ? (
+                                            <MoneyInput
+                                                value={edit[k]}
+                                                onChange={(v) =>
+                                                    setEdit({
+                                                        ...edit,
+                                                        [k]: v || 0,
+                                                    })
+                                                }
+                                            />
+                                        ) : t === 'cat' ? (
+                                            <NativeSelect
+                                                value={edit[k]}
+                                                onChange={(e) =>
+                                                    setEdit({
+                                                        ...edit,
+                                                        [k]: e.target.value,
+                                                    })
+                                                }
+                                            >
+                                                {Object.entries(CAT).map(
+                                                    ([a, b]) => (
+                                                        <option
+                                                            key={a}
+                                                            value={a}
+                                                        >
+                                                            {b}
+                                                        </option>
+                                                    ),
+                                                )}
+                                            </NativeSelect>
+                                        ) : (
+                                            <Input
+                                                type={
+                                                    t === 'number'
+                                                        ? 'number'
+                                                        : t === 'color'
+                                                          ? 'color'
+                                                          : 'text'
+                                                }
+                                                className={cn(
+                                                    t === 'color' && 'h-9 p-1',
+                                                )}
+                                                value={edit[k] ?? ''}
+                                                onChange={(e) =>
+                                                    setEdit({
+                                                        ...edit,
+                                                        [k]:
+                                                            t === 'number'
+                                                                ? +e.target
+                                                                      .value
+                                                                : e.target
+                                                                      .value,
+                                                    })
+                                                }
+                                            />
+                                        )}
+                                    </Field>
+                                ),
+                            )}
                     </div>
                     {table === 'products' && (
                         <p className="text-xs text-muted-foreground">

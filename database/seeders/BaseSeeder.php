@@ -15,6 +15,9 @@ class BaseSeeder extends Seeder
         }
         $defaults = ['business_name' => 'Arena Futsal Nusantara', 'open_hour' => '8', 'close_hour' => '24', 'address' => 'Jl. Merdeka No. 10',
             'phone' => '081234567890', 'bank_info' => 'BCA 1234567890 a.n. Arena Futsal Nusantara', 'receipt_footer' => 'Terima kasih, selamat bermain!'];
+        if (app()->isProduction()) {
+            $defaults = [...$defaults, 'business_name' => (string) config('app.name'), 'address' => '', 'phone' => '', 'bank_info' => ''];
+        }
         foreach ($defaults as $key => $value) {
             DB::table('settings')->insertOrIgnore(compact('key', 'value'));
         }

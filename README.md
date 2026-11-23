@@ -109,15 +109,19 @@ Semua memakai password `password`. Menu otomatis menyesuaikan peran.
 
 ## Produksi
 
+Sebelum menjalankan perintah di bawah, ubah `.env` terlebih dahulu: `APP_ENV=production`, `APP_DEBUG=false`, `FUTSAL_ALLOW_RESET=false`, `APP_URL` dengan `https://`, dan `SESSION_SECURE_COOKIE=true`. Perintah `php artisan optimize` menyimpan konfigurasi ke cache, jadi perubahan `.env` setelahnya tidak berlaku sampai perintah itu dijalankan ulang.
+
 ```bash
 composer install --no-dev --optimize-autoloader
 pnpm install && pnpm run build
 php artisan migrate --force
+php artisan db:seed --force   # di produksi hanya membuat daftar akun (COA) & pengaturan, tanpa data/akun demo
+php artisan futsal:user pemilik@usaha.com --role=owner --name="Pemilik"   # password ditanya interaktif
 php artisan optimize          # cache config, route, view, event
 php artisan queue:work redis  # jalankan lewat Supervisor/systemd
 ```
 
-Set `APP_ENV=production` dan `APP_DEBUG=false`, aktifkan OPcache, dan arahkan web server ke folder `public/`.
+Aktifkan OPcache dan arahkan web server ke folder `public/`. Akun staf lain dibuat dengan perintah yang sama memakai `--role=admin`, `--role=kasir`, atau `--role=akuntan`.
 
 ## Pengujian
 
@@ -131,6 +135,42 @@ pnpm run check                 # lint & format frontend
 pnpm run types:check           # TypeScript
 ```
 
+## Keamanan
+
+Yang sudah diterapkan:
+
+- Hak akses per peran dicek di server (middleware `role:`), tidak hanya dengan menyembunyikan menu.
+- Login dibatasi 5 percobaan per menit, tersedia autentikasi dua faktor (2FA), dan pendaftaran akun publik dinonaktifkan.
+- Semua endpoint memakai sesi + token CSRF. Endpoint data dibatasi 300 permintaan per menit per pengguna.
+- Semua input divalidasi lewat Form Request dan query memakai parameter binding (aman dari SQL injection).
+- Header keamanan: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, dan HSTS saat HTTPS.
+- Ekspor CSV menetralkan sel yang diawali `=`, `+`, `-`, atau `@` agar tidak dijalankan sebagai rumus oleh Excel.
+- Reset data demo hanya untuk pemilik dan otomatis mati di produksi. Data dan akun demo tidak dibuat di produksi.
+- Stok dan HPP hanya berubah lewat pembelian, penjualan, atau stok opname, sehingga nilai persediaan selalu sama dengan jurnal.
+- Menghapus pembayaran booking hanya bisa dilakukan admin. Harga jual di kasir selalu diambil dari master produk di server, bukan dari browser.
+- `composer audit` dan `pnpm audit` bersih saat dokumen ini ditulis, dan Dependabot memantau dependensi setiap minggu.
+
+Temukan celah keamanan? Laporkan secara privat sesuai [SECURITY.md](SECURITY.md).
+
+## Batasan
+
+Hal-hal yang perlu diketahui sebelum memakai aplikasi ini:
+
+| Area          | Batasan                                                                                                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Pengguna      | Belum ada halaman kelola pengguna. Akun dibuat lewat `php artisan futsal:user`. Satu akun hanya punya satu peran.                                                                                            |
+| Usaha         | Satu usaha dan satu lokasi per instalasi (belum multi-cabang/multi-tenant). Hanya mata uang Rupiah tanpa desimal.                                                                                            |
+| Booking       | Satuan waktu per jam penuh. Jam operasional tidak bisa melewati tengah malam (paling lambat tutup 24:00). Belum ada booking online oleh pelanggan.                                                           |
+| Pembayaran    | Pembayaran dicatat manual (tunai/transfer). Belum ada integrasi QRIS atau payment gateway.                                                                                                                   |
+| WhatsApp      | Memakai link `wa.me`, jadi pesan tidak terkirim otomatis. Staf tetap perlu menekan kirim.                                                                                                                    |
+| Akuntansi     | Akuntansi dasar: belum ada pajak (PPN/PPh), penyusutan aset otomatis, rekonsiliasi bank, atau penguncian/tutup buku per periode. Transaksi lama masih bisa diubah atau dihapus oleh admin.                   |
+| Audit         | Belum ada log aktivitas (siapa mengubah apa dan kapan).                                                                                                                                                      |
+| Kontrol kasir | Kasir bisa memberi diskon booking tanpa persetujuan atasan (harga jual di kasir selalu diambil dari master produk). Dashboard menampilkan ringkasan keuangan ke semua peran.                                 |
+| Laporan       | Ekspor berupa CSV dan cetak nota lewat browser. Belum ada ekspor PDF/Excel. Laporan dihitung langsung dari jurnal dan di-cache di Redis; data yang sangat besar bisa membuatnya lebih lambat.                |
+| Bahasa        | Antarmuka berbahasa Indonesia, kecuali halaman login, lupa password, dan 2FA bawaan starter kit yang masih berbahasa Inggris.                                                                                |
+| Infrastruktur | Wajib MySQL 8 (query memakai fungsi khusus MySQL) dan Redis. Lupa password butuh konfigurasi email (`MAIL_*`); bawaannya hanya ditulis ke log. Zona waktu bawaan `Asia/Jakarta` (ubah lewat `APP_TIMEZONE`). |
+| Keamanan      | Belum ada Content Security Policy (CSP). Kode belum diaudit oleh pihak ketiga. Uji otomatis mencakup alur utama, bukan semua kemungkinan.                                                                    |
+
 ## Peta jalan
 
 - [ ] Laravel Octane (FrankenPHP) untuk respons lebih cepat
@@ -138,6 +178,8 @@ pnpm run types:check           # TypeScript
 - [ ] Ekspor laporan PDF/Excel lewat antrean
 - [ ] Booking online mandiri oleh pelanggan
 - [ ] Integrasi pembayaran (QRIS / payment gateway)
+- [ ] Halaman kelola pengguna dan log aktivitas (audit trail)
+- [ ] Tutup buku per periode dan pajak (PPN)
 
 ## Kontribusi
 

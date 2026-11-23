@@ -159,9 +159,14 @@ export function downloadCSV(
     cols ??= Object.keys(rows[0] || {}).map((k) => ({ label: k, key: k }));
 
     const esc = (v: unknown) => {
-        const s = toText(v);
+        let s = toText(v);
 
-        return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        // Cegah formula injection saat CSV dibuka di Excel/Sheets.
+        if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) {
+            s = "'" + s;
+        }
+
+        return /[",\r\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
     const lines = [
         cols!.map((c) => esc(c.label)).join(','),

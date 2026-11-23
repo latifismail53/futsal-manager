@@ -16,6 +16,8 @@ class BookingController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $this->validateDates($request, 'from', 'to');
+
         return response()->json(Bookings::list($request->only('from', 'to', 'field_id', 'customer_id', 'status', 'q', 'payment_status'), (int) $request->input('limit', 1000)));
     }
 
@@ -93,11 +95,15 @@ class BookingController extends Controller
 
     public function availability(Request $request): JsonResponse
     {
+        $this->validateDates($request, 'date');
+
         return response()->json(Bookings::availability($request->input('date', today()->toDateString()), $request->integer('field_id') ?: null, $request->integer('exclude')));
     }
 
     public function availabilityDays(Request $request): JsonResponse
     {
+        $this->validateDates($request, 'from');
+
         return response()->json(Bookings::availabilityDays($request->input('from', today()->toDateString()), $request->integer('days', 14), $request->integer('field_id') ?: null));
     }
 
@@ -108,6 +114,7 @@ class BookingController extends Controller
 
     public function cancelSeries(Request $request, string $series): JsonResponse
     {
+        $this->validateDates($request, 'from');
         $ids = DB::table('bookings')->where('series', $series)->where('status', 'booked')->where('date', '>=', $request->input('from', today()->toDateString()))->pluck('id');
         DB::transaction(function () use ($ids) {
             DB::table('bookings')->whereIn('id', $ids)->update(['status' => 'batal']);

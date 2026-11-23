@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\DB;
 class MasterController extends Controller
 {
     private const RULES = [
-        'fields' => ['name' => 'required|string|max:255', 'type' => 'nullable|string|max:100', 'price_day' => 'required|integer|min:0', 'price_night' => 'required|integer|min:0', 'night_start' => 'required|integer|between:0,24', 'color' => 'nullable|string|max:20', 'active' => 'boolean'],
+        'fields' => ['name' => 'required|string|max:255', 'type' => 'nullable|string|max:100', 'price_day' => 'required|integer|min:0', 'price_night' => 'required|integer|min:0', 'night_start' => 'required|integer|between:0,24', 'color' => ['nullable', 'regex:/^#[0-9a-fA-F]{3,8}$/'], 'active' => 'boolean'],
         'customers' => ['name' => 'required|string|max:255', 'phone' => 'nullable|string|max:30', 'team' => 'nullable|string|max:255', 'notes' => 'nullable|string|max:2000'],
         'suppliers' => ['name' => 'required|string|max:255', 'phone' => 'nullable|string|max:30', 'address' => 'nullable|string|max:255'],
-        'products' => ['name' => 'required|string|max:255', 'category' => 'required|in:fnb,rental,other', 'unit' => 'nullable|string|max:20', 'price' => 'required|integer|min:0', 'cost' => 'nullable|integer|min:0', 'stock' => 'nullable|integer', 'min_stock' => 'nullable|integer|min:0', 'track_stock' => 'boolean', 'active' => 'boolean'],
+        'products' => ['name' => 'required|string|max:255', 'category' => 'required|in:fnb,rental,other', 'unit' => 'nullable|string|max:20', 'price' => 'required|integer|min:0', 'cost' => 'nullable|integer|min:0', 'min_stock' => 'nullable|integer|min:0', 'track_stock' => 'boolean', 'active' => 'boolean'],
     ];
 
     private const REFS = [
@@ -38,8 +38,13 @@ class MasterController extends Controller
 
     public function update(Request $request, string $type, int $id): JsonResponse
     {
-        $rules = array_map(fn ($r) => str_replace('required|', 'sometimes|required|', $r), self::RULES[$type]);
-        DB::table($type)->where('id', $id)->update($request->validate($rules) + ['updated_at' => now()]);
+        $rules = array_map(fn ($r) => is_string($r) ? str_replace('required|', 'sometimes|required|', $r) : $r, self::RULES[$type]);
+        $data = $request->validate($rules);
+        $row = Row::find($type, $id);
+        if ($type === 'products' && isset($data['cost']) && (int) $data['cost'] !== (int) $row->cost && $row->stock > 0) {
+            throw new DomainException('HPP tidak bisa diubah manual selama masih ada stok, karena nilai persediaan di neraca akan selisih. HPP dihitung otomatis dari pembelian.');
+        }
+        DB::table($type)->where('id', $id)->update($data + ['updated_at' => now()]);
 
         return response()->json(Row::find($type, $id));
     }
