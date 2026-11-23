@@ -7,6 +7,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 #[Signature('futsal:user {email} {--name= : Nama pengguna} {--role= : owner, admin, kasir, atau akuntan (akun baru: owner; akun lama: peran tetap)}')]
@@ -39,6 +40,7 @@ class CreateUser extends Command
             'password' => $password,
             'role' => $role,
             'email_verified_at' => $user->email_verified_at ?? now(),
+            'remember_token' => Str::random(60),
         ])->save();
 
         $this->info("Akun {$user->email} ({$role}) tersimpan.");

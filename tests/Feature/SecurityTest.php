@@ -80,6 +80,17 @@ class SecurityTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors('color');
     }
 
+    public function test_password_change_invalidates_existing_sessions(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $this->post('/login', ['email' => $user->email, 'password' => 'password'])->assertRedirect();
+        $this->get('/dashboard')->assertOk();
+
+        $user->forceFill(['password' => 'S4ndi-Baru!2026'])->save();
+        $this->app['auth']->forgetGuards();
+        $this->get('/dashboard')->assertRedirect('/login');
+    }
+
     public function test_new_users_default_to_least_privileged_role(): void
     {
         DB::table('users')->insert(['name' => 'X', 'email' => 'x@example.com', 'password' => 'x']);
