@@ -109,6 +109,8 @@ Semua memakai password `password`. Menu otomatis menyesuaikan peran.
 
 ## Produksi
 
+Sebelum menjalankan perintah di bawah, ubah `.env` terlebih dahulu: `APP_ENV=production`, `APP_DEBUG=false`, dan `FUTSAL_ALLOW_RESET=false`. Perintah `php artisan optimize` menyimpan konfigurasi ke cache, jadi perubahan `.env` setelahnya tidak berlaku sampai perintah itu dijalankan ulang.
+
 ```bash
 composer install --no-dev --optimize-autoloader
 pnpm install && pnpm run build
@@ -117,7 +119,7 @@ php artisan optimize          # cache config, route, view, event
 php artisan queue:work redis  # jalankan lewat Supervisor/systemd
 ```
 
-Set `APP_ENV=production` dan `APP_DEBUG=false`, aktifkan OPcache, dan arahkan web server ke folder `public/`.
+Aktifkan OPcache dan arahkan web server ke folder `public/`.
 
 ## Pengujian
 
